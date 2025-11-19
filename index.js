@@ -28,9 +28,9 @@ bot.onText(/\/start/, (msg) => {
     guardarUsuarios();
   }
 
-  bot.sendMessage(
-    chatId,
-    "👋 ¡Bienvenido/a!
+bot.sendMessage(
+  chatId,
+  `👋 ¡Bienvenido/a!
 
 Gracias por llegar hasta acá 🙌
 Ya quedaste registrado en nuestro bot oficial, así vas a recibir bonos, promos y alertas exclusivas.
@@ -39,7 +39,7 @@ Ya quedaste registrado en nuestro bot oficial, así vas a recibir bonos, promos 
 WELCOME
 
 🔄 Para activarlo, seguí estos pasos:
-1️⃣ Entrá a la sección “Códigos” en la página.
+1️⃣ Entrá a la sección "Códigos" en la página.
 2️⃣ Escribí: WELCOME
 3️⃣ ¡Listo! Se activa tu doble beneficio 💸💰
 
@@ -47,8 +47,8 @@ WELCOME
 Siempre podés cargar y retirar directamente por la página.
 Es la forma más rápida, segura y automática.
 
-🍀 ¡Que la suerte te acompañe! "
-  );
+🍀 ¡Que la suerte te acompañe!`
+);
 });
 
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
