@@ -30,7 +30,24 @@ bot.onText(/\/start/, (msg) => {
 
   bot.sendMessage(
     chatId,
-    "¡Bienvenido! 🎉\n\nTu código de bienvenida para la carga 100% es: WELCOME100"
+    "👋 ¡Bienvenido/a!
+
+Gracias por llegar hasta acá 🙌
+Ya quedaste registrado en nuestro bot oficial, así vas a recibir bonos, promos y alertas exclusivas.
+
+🎁 Tu BONO DE BIENVENIDA es:
+WELCOME
+
+🔄 Para activarlo, seguí estos pasos:
+1️⃣ Entrá a la sección “Códigos” en la página.
+2️⃣ Escribí: WELCOME
+3️⃣ ¡Listo! Se activa tu doble beneficio 💸💰
+
+💻 Recordá:
+Siempre podés cargar y retirar directamente por la página.
+Es la forma más rápida, segura y automática.
+
+🍀 ¡Que la suerte te acompañe! "
   );
 });
 
