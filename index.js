@@ -3,7 +3,6 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-const crypto = require("crypto");
 
 /* ============================
    🔐 VARIABLES DEL BOT / META
@@ -15,29 +14,18 @@ if (!TOKEN) throw new Error("Falta la variable BOT_TOKEN");
 const META_PIXEL_ID = process.env.META_PIXEL_ID;
 const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
 
-// 👑 Tu ID de Telegram (cambiá si hace falta)
+// 👑 Tu ID de Telegram (para /broadcast)
 const ADMIN_ID = 7759212225;
 
 /* ============================
-   🔧 HELPERS
+   📁 DISK DE RENDER (/data)
 =============================== */
 
-function sha256(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
-/* ============================
-   📁 CONFIGURAR DISK DE RENDER
-=============================== */
-
-// Render monta el disco en /data (no lo creamos nosotros)
+// Render monta el disco en /data
 const DATA_DIR = "/data";
-
 const USERS_FILE = path.join(DATA_DIR, "usuarios.json");
-const EMAILS_FILE = path.join(DATA_DIR, "emails.json");
 
 console.log("📂 Archivo usuarios:", USERS_FILE);
-console.log("📂 Archivo emails:", EMAILS_FILE);
 
 /* ============================
    📌 CARGAR USUARIOS
@@ -67,37 +55,10 @@ function guardarUsuarios() {
 }
 
 /* ============================
-   📌 CARGAR EMAILS
+   📡 ENVIAR LEAD A META (CAPI)
 =============================== */
 
-let emails = [];
-
-if (fs.existsSync(EMAILS_FILE)) {
-  try {
-    emails = JSON.parse(fs.readFileSync(EMAILS_FILE, "utf8"));
-    console.log("✅ Emails cargados al iniciar:", emails.length);
-  } catch (e) {
-    console.error("❌ Error leyendo emails.json:", e);
-    emails = [];
-  }
-} else {
-  console.log("ℹ️ emails.json no existe, se creará al guardar el primero.");
-}
-
-function guardarEmails() {
-  try {
-    fs.writeFileSync(EMAILS_FILE, JSON.stringify(emails, null, 2));
-    console.log("📩 Emails guardados:", emails.length);
-  } catch (e) {
-    console.error("❌ Error guardando emails:", e);
-  }
-}
-
-/* ============================
-   📡 ENVIAR EVENTO A META (CAPI)
-=============================== */
-
-async function enviarEventoMeta({ eventName, chatId, email }) {
+async function enviarLeadMeta(chatId) {
   if (!META_PIXEL_ID || !META_ACCESS_TOKEN) {
     console.log("⚠️ Pixel o Access Token de Meta no configurados, no se envía evento.");
     return;
@@ -105,22 +66,16 @@ async function enviarEventoMeta({ eventName, chatId, email }) {
 
   const url = `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`;
 
-  // Siempre mandamos al menos external_id hasheado
+  // Mandamos external_id (NO hasheado) + user_agent
   const user_data = {
-    client_user_agent: `telegram_chat_${chatId}`,
-    external_id: sha256(String(chatId)) // identificador estable
+    external_id: String(chatId),
+    client_user_agent: "telegram-bot"
   };
-
-  // Si tenemos email, lo normalizamos y lo mandamos hasheado
-  if (email) {
-    const normalizedEmail = email.trim().toLowerCase();
-    user_data.em = [sha256(normalizedEmail)];
-  }
 
   const payload = {
     data: [
       {
-        event_name: eventName,
+        event_name: "Lead",
         event_time: Math.floor(Date.now() / 1000),
         action_source: "system_generated",
         user_data
@@ -131,19 +86,19 @@ async function enviarEventoMeta({ eventName, chatId, email }) {
 
   try {
     const res = await axios.post(url, payload);
-    console.log("📨 Enviado a Meta OK:", res.data);
+    console.log("📨 Lead enviado a Meta OK:", res.data);
   } catch (err) {
     console.error("❌ Error Meta CAPI:", err.response?.data || err.message);
   }
 }
 
 /* ============================
-   🤖 INICIAR BOT TELEGRAM
+   🤖 BOT TELEGRAM
 =============================== */
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-/* ----- /start ----- */
+/* ----- /start → registra usuario + Lead ----- */
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -153,23 +108,20 @@ bot.onText(/\/start/, (msg) => {
     guardarUsuarios();
   }
 
-  // Evento Lead (sin email todavía)
-  enviarEventoMeta({ eventName: "Lead", chatId, email: null });
+  // Enviar evento Lead a Meta
+  enviarLeadMeta(chatId);
 
   bot.sendMessage(
     chatId,
     `👋 ¡Bienvenido/a!
 
-Ya estás registrado y vas a recibir bonos y alertas exclusivas 🎁
-
-📧 Si querés recibir beneficios también por email,
-enviame tu correo (por ejemplo: tunombre@gmail.com).
+Ya quedaste registrado en nuestro bot oficial. Desde ahora vas a recibir bonos, promos y alertas exclusivas 🎁
 
 🍀 ¡Mucha suerte!`
   );
 });
 
-/* ----- /broadcast <mensaje> ----- */
+/* ----- /broadcast <mensaje> (solo admin) ----- */
 
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
   if (msg.from.id !== ADMIN_ID) {
@@ -192,41 +144,6 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
   });
 
   bot.sendMessage(msg.chat.id, "✅ Broadcast enviado a todos los usuarios.");
-});
-
-/* ============================
-   📧 DETECTAR EMAILS AUTOMÁTICO
-=============================== */
-
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
-  const text = (msg.text || "").trim();
-
-  // ignorar comandos (/start, /broadcast, etc.)
-  if (!text || text.startsWith("/")) return;
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (emailRegex.test(text)) {
-    const email = text.toLowerCase();
-
-    const exist = emails.find((e) => e.chatId === chatId);
-    if (exist) {
-      exist.email = email;
-    } else {
-      emails.push({ chatId, email });
-    }
-
-    guardarEmails();
-
-    // Evento CompleteRegistration con email
-    enviarEventoMeta({ eventName: "CompleteRegistration", chatId, email });
-
-    bot.sendMessage(
-      chatId,
-      `📩 Email guardado: ${email}\n\nSi querés que lo borre, avisame.`
-    );
-  }
 });
 
 /* ============================
