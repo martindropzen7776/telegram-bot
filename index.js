@@ -112,14 +112,15 @@ bot.sendMessage(
 <b>WELCOME</b>
 
 🔄 <b>Para activarlo:</b>
-1️⃣ Entrá a <i>Códigos</i> en la página
-2️⃣ Escribí: <b>WELCOME</b> 🎟️
+1️⃣ Entra en el icono de la personita arriba a la derecha
+2️⃣ En la parte de código promocional ingresa el código
+3️⃣ Escribí: <b>WELCOME</b>
 
 🎁 <b>BONO EXTRA SORPRESA:</b>
 Solo por abrir este chat, te damos un BONO EXTRA de regalo, exclusivo para vos.
 
-Para recibirlo ahora,
-👉 <a href="https://t.me/Winplayvip">Haz click aquí para jugar</a> 👈
+Para recibirlo ahora, escribí a nuestro agente oficial 👇
+👉 <a href="https://t.me/m/j2MrUv6LOWI5">Haz click aquí para jugar</a> 👈
 
 🥇 <b>Tip:</b> Guardá este chat.
 Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
