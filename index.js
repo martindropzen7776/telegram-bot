@@ -124,9 +124,9 @@ Para recibirlo ahora,
 🥇 <b>Tip:</b> Guardá este chat.
 Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
 `,
-  { parse_mode: "HTML", disable_web_page_preview: true }
-);
-
+   { parse_mode: "HTML", disable_web_page_preview: true }
+ );
+}); // 👈 ESTE CIERRE FALTABA
 
 /* ----- /broadcast <mensaje> (solo admin) ----- */
 
