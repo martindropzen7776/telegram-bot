@@ -179,10 +179,19 @@ bot.on("message", (msg) => {
   // Guardar email en /data/emails.json
   setEmail(chatId, email);
 
-  bot.sendMessage(
-    chatId,
-    `✅ Perfecto, registré tu correo: *${email}*\n\nYa quedaste registrado en nuestro sistema.`,
-    { parse_mode: "Markdown" }
+bot.sendMessage(
+  chatId,
+  `🎁 <b>Bono exclusivo para vos</b> 🎁
+Te regalamos un <b>30%</b> en tu próxima carga. 
+Solo tenés que hablarnos a TG 👉 <a href="https://t.me/m/eCMJ3EBWZjNh">Haz click aquí</a> 
+o realizar tu carga directa 👉 <a href="https://winplay.space/home">Click para cargar</a>
+
+🚨 Si realizás tu carga directa, dejanos un comentario que diga:
+<b>"quiero mi bono del 30%"</b>
+
+✨ Unite a nuestro canal para recibir promos exclusivas todos los días  
+👉 <a href="https://t.me/+Q6G0LB5WK1lhNmJh">Unirme al canal</a> ✨`,
+  { parse_mode: "HTML", disable_web_page_preview: true }
   );
 });
 
