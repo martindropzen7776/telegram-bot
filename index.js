@@ -2,30 +2,28 @@ const TelegramBot = require("node-telegram-bot-api");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const axios = require("axios");
 
 /* ============================
-   🔐 VARIABLES DEL BOT / META
+   🔐 VARIABLES DEL BOT
 =============================== */
 
 const TOKEN = process.env.BOT_TOKEN;
 if (!TOKEN) throw new Error("Falta la variable BOT_TOKEN");
 
-const META_PIXEL_ID = process.env.META_PIXEL_ID;
-const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
-
 // 👑 Tu ID de Telegram (para /broadcast)
 const ADMIN_ID = 7759212225;
 
 /* ============================
-   📁 DISK DE RENDER (/data)
+   📁 DISK /data EN RENDER
 =============================== */
 
-// Render monta el disco en /data
-const DATA_DIR = "/data";
+const DATA_DIR = "/data"; // Render monta el disk aquí
+
 const USERS_FILE = path.join(DATA_DIR, "usuarios.json");
+const EMAILS_FILE = path.join(DATA_DIR, "emails.json");
 
 console.log("📂 Archivo usuarios:", USERS_FILE);
+console.log("📂 Archivo emails:", EMAILS_FILE);
 
 /* ============================
    📌 CARGAR USUARIOS
@@ -55,41 +53,41 @@ function guardarUsuarios() {
 }
 
 /* ============================
-   📡 ENVIAR LEAD A META (CAPI)
+   📌 CARGAR EMAILS
+   Estructura: [{ chatId, email }]
 =============================== */
 
-async function enviarLeadMeta(chatId) {
-  if (!META_PIXEL_ID || !META_ACCESS_TOKEN) {
-    console.log("⚠️ Pixel o Access Token de Meta no configurados, no se envía evento.");
-    return;
-  }
+let emails = [];
 
-  const url = `https://graph.facebook.com/v18.0/${META_PIXEL_ID}/events`;
-
-  // Mandamos external_id (NO hasheado) + user_agent
-  const user_data = {
-    external_id: String(chatId),
-    client_user_agent: "telegram-bot"
-  };
-
-  const payload = {
-    data: [
-      {
-        event_name: "Lead",
-        event_time: Math.floor(Date.now() / 1000),
-        action_source: "system_generated",
-        user_data
-      }
-    ],
-    access_token: META_ACCESS_TOKEN
-  };
-
+if (fs.existsSync(EMAILS_FILE)) {
   try {
-    const res = await axios.post(url, payload);
-    console.log("📨 Lead enviado a Meta OK:", res.data);
-  } catch (err) {
-    console.error("❌ Error Meta CAPI:", err.response?.data || err.message);
+    emails = JSON.parse(fs.readFileSync(EMAILS_FILE, "utf8"));
+    console.log("✅ Emails cargados al iniciar:", emails.length);
+  } catch (e) {
+    console.error("❌ Error leyendo emails.json:", e);
+    emails = [];
   }
+} else {
+  console.log("ℹ️ emails.json no existe, se creará al guardar el primero.");
+}
+
+function guardarEmails() {
+  try {
+    fs.writeFileSync(EMAILS_FILE, JSON.stringify(emails, null, 2));
+    console.log("📩 Emails guardados:", emails.length);
+  } catch (e) {
+    console.error("❌ Error guardando emails:", e);
+  }
+}
+
+function setEmail(chatId, email) {
+  const idx = emails.findIndex((e) => e.chatId === chatId);
+  if (idx === -1) {
+    emails.push({ chatId, email });
+  } else {
+    emails[idx].email = email;
+  }
+  guardarEmails();
 }
 
 /* ============================
@@ -98,7 +96,7 @@ async function enviarLeadMeta(chatId) {
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-/* ----- /start → registra usuario + Lead ----- */
+/* ----- /start → registra usuario y pide email ----- */
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
@@ -108,16 +106,25 @@ bot.onText(/\/start/, (msg) => {
     guardarUsuarios();
   }
 
-  // Enviar evento Lead a Meta
-  enviarLeadMeta(chatId);
-
   bot.sendMessage(
     chatId,
-    `👋 ¡Bienvenido/a!
+    `Tu <b>BONO DE BIENVENIDA</b> es:
+<b>WELCOME</b>
 
-Ya quedaste registrado en nuestro bot oficial. Desde ahora vas a recibir bonos, promos y alertas exclusivas 🎁
+🔄 <b>Para activarlo:</b>
+1️⃣ Entrá a <i>Códigos</i> en la página
+2️⃣ Escribí: <b>WELCOME</b> 🎟️
 
-🍀 ¡Mucha suerte!`
+🎁 <b>BONO EXTRA SORPRESA:</b>
+Solo por abrir este chat, te damos un BONO EXTRA de regalo, exclusivo para vos.
+
+Para recibirlo ahora,
+👉 <a href="https://t.me/Winplayvip">Haz click aquí para jugar</a> 👈
+
+🥇 <b>Tip:</b> Guardá este chat.
+Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
+`,
+    { parse_mode: "Markdown" }
   );
 });
 
@@ -147,13 +154,45 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
 });
 
 /* ============================
+   📧 CAPTURAR EMAIL
+   (solo guarda en /data/emails.json)
+=============================== */
+
+bot.on("message", (msg) => {
+  const chatId = msg.chat.id;
+  const text = (msg.text || "").trim();
+
+  // ignorar comandos tipo /start, /broadcast, etc.
+  if (!text || text.startsWith("/")) return;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(text)) {
+    // Si querés, podés responder algo acá
+    // bot.sendMessage(chatId, "Por favor enviá un email válido 😊");
+    return;
+  }
+
+  const email = text.toLowerCase();
+
+  // Guardar email en /data/emails.json
+  setEmail(chatId, email);
+
+  bot.sendMessage(
+    chatId,
+    `✅ Perfecto, registré tu correo: *${email}*\n\nYa quedaste registrado en nuestro sistema.`,
+    { parse_mode: "Markdown" }
+  );
+});
+
+/* ============================
    🌐 EXPRESS PARA RENDER
 =============================== */
 
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Bot funcionando en Render ✅");
+  res.send("Bot Telegram funcionando ✅ (sin integración Meta Pixel)");
 });
 
 const PORT = process.env.PORT || 10000;
