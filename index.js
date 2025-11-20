@@ -106,9 +106,9 @@ bot.onText(/\/start/, (msg) => {
     guardarUsuarios();
   }
 
-  bot.sendMessage(
-    chatId,
-    `Tu <b>BONO DE BIENVENIDA</b> es:
+bot.sendMessage(
+  chatId,
+  `Tu <b>BONO DE BIENVENIDA</b> es:
 <b>WELCOME</b>
 
 🔄 <b>Para activarlo:</b>
@@ -124,9 +124,9 @@ Para recibirlo ahora,
 🥇 <b>Tip:</b> Guardá este chat.
 Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
 `,
-    { parse_mode: "Markdown" }
-  );
-});
+  { parse_mode: "HTML", disable_web_page_preview: true }
+);
+
 
 /* ----- /broadcast <mensaje> (solo admin) ----- */
 
