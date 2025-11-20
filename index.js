@@ -10,7 +10,7 @@ const path = require("path");
 const TOKEN = process.env.BOT_TOKEN;
 if (!TOKEN) throw new Error("Falta la variable BOT_TOKEN");
 
-// 👑 Tu ID de Telegram (para /broadcast)
+// 👑 Tu ID de Telegram (para /broadcast y /stats)
 const ADMIN_ID = 7759212225;
 
 /* ============================
@@ -18,12 +18,9 @@ const ADMIN_ID = 7759212225;
 =============================== */
 
 const DATA_DIR = "/data"; // Render monta el disk aquí
-
 const USERS_FILE = path.join(DATA_DIR, "usuarios.json");
-const EMAILS_FILE = path.join(DATA_DIR, "emails.json");
 
 console.log("📂 Archivo usuarios:", USERS_FILE);
-console.log("📂 Archivo emails:", EMAILS_FILE);
 
 /* ============================
    📌 CARGAR USUARIOS
@@ -53,62 +50,34 @@ function guardarUsuarios() {
 }
 
 /* ============================
-   📌 CARGAR EMAILS
-   Estructura: [{ chatId, email }]
-=============================== */
-
-let emails = [];
-
-if (fs.existsSync(EMAILS_FILE)) {
-  try {
-    emails = JSON.parse(fs.readFileSync(EMAILS_FILE, "utf8"));
-    console.log("✅ Emails cargados al iniciar:", emails.length);
-  } catch (e) {
-    console.error("❌ Error leyendo emails.json:", e);
-    emails = [];
-  }
-} else {
-  console.log("ℹ️ emails.json no existe, se creará al guardar el primero.");
-}
-
-function guardarEmails() {
-  try {
-    fs.writeFileSync(EMAILS_FILE, JSON.stringify(emails, null, 2));
-    console.log("📩 Emails guardados:", emails.length);
-  } catch (e) {
-    console.error("❌ Error guardando emails:", e);
-  }
-}
-
-function setEmail(chatId, email) {
-  const idx = emails.findIndex((e) => e.chatId === chatId);
-  if (idx === -1) {
-    emails.push({ chatId, email });
-  } else {
-    emails[idx].email = email;
-  }
-  guardarEmails();
-}
-
-/* ============================
    🤖 BOT TELEGRAM
 =============================== */
 
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-/* ----- /start → registra usuario y pide email ----- */
+/* ----- /start → registra usuario y loguea datos ----- */
 
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
+  const username = msg.from.username || "";
+  const firstName = msg.from.first_name || "";
+  const lastName = msg.from.last_name || "";
 
   if (!usuarios.includes(chatId)) {
     usuarios.push(chatId);
     guardarUsuarios();
+    console.log(
+      `🆕 Nuevo usuario: id=${chatId} username=@${username} nombre=${firstName} ${lastName}`
+    );
+  } else {
+    console.log(
+      `🔁 Usuario repetido: id=${chatId} username=@${username} nombre=${firstName} ${lastName}`
+    );
   }
 
-bot.sendMessage(
-  chatId,
-  `Tu <b>BONO DE BIENVENIDA</b> es:
+  bot.sendMessage(
+    chatId,
+    `Tu <b>BONO DE BIENVENIDA</b> es:
 <b>WELCOME</b>
 
 🔄 <b>Para activarlo:</b>
@@ -125,15 +94,18 @@ Para recibirlo ahora, escribí a nuestro agente oficial 👇
 🥇 <b>Tip:</b> Guardá este chat.
 Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
 `,
-   { parse_mode: "HTML", disable_web_page_preview: true }
- );
-}); // 👈 ESTE CIERRE FALTABA
+    { parse_mode: "HTML", disable_web_page_preview: true }
+  );
+});
 
 /* ----- /broadcast <mensaje> (solo admin) ----- */
 
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
   if (msg.from.id !== ADMIN_ID) {
-    return bot.sendMessage(msg.chat.id, "❌ No tenés permiso para usar este comando.");
+    return bot.sendMessage(
+      msg.chat.id,
+      "❌ No tenés permiso para usar este comando."
+    );
   }
 
   const mensaje = match[1];
@@ -154,44 +126,21 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
   bot.sendMessage(msg.chat.id, "✅ Broadcast enviado a todos los usuarios.");
 });
 
-/* ============================
-   📧 CAPTURAR EMAIL
-   (solo guarda en /data/emails.json)
-=============================== */
+/* ----- /stats → ver cantidad de usuarios (solo admin) ----- */
 
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
-  const text = (msg.text || "").trim();
-
-  // ignorar comandos tipo /start, /broadcast, etc.
-  if (!text || text.startsWith("/")) return;
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  if (!emailRegex.test(text)) {
-    // Si querés, podés responder algo acá
-    // bot.sendMessage(chatId, "Por favor enviá un email válido 😊");
-    return;
+bot.onText(/\/stats/, (msg) => {
+  if (msg.from.id !== ADMIN_ID) {
+    return bot.sendMessage(
+      msg.chat.id,
+      "❌ No tenés permiso para usar este comando."
+    );
   }
 
-  const email = text.toLowerCase();
-
-  // Guardar email en /data/emails.json
-  setEmail(chatId, email);
-
-bot.sendMessage(
-  chatId,
-  `🎁 <b>Bono exclusivo para vos</b> 🎁
-Te regalamos un <b>30%</b> en tu próxima carga. 
-Solo tenés que hablarnos a TG 👉 <a href="https://t.me/m/eCMJ3EBWZjNh">Haz click aquí</a> 
-o realizar tu carga directa 👉 <a href="https://winplay.space/home">Click para cargar</a>
-
-🚨 Si realizás tu carga directa, dejanos un comentario que diga:
-<b>"quiero mi bono del 30%"</b>
-
-✨ Unite a nuestro canal para recibir promos exclusivas todos los días  
-👉 <a href="https://t.me/+Q6G0LB5WK1lhNmJh">Unirme al canal</a> ✨`,
-  { parse_mode: "HTML", disable_web_page_preview: true }
+  console.log("📊 Stats pedidas. Total usuarios:", usuarios.length);
+  bot.sendMessage(
+    msg.chat.id,
+    `📊 Usuarios registrados que tocaron /start: <b>${usuarios.length}</b>`,
+    { parse_mode: "HTML" }
   );
 });
 
@@ -202,7 +151,7 @@ o realizar tu carga directa 👉 <a href="https://winplay.space/home">Click para
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Bot Telegram funcionando ✅ (sin integración Meta Pixel)");
+  res.send("Bot Telegram funcionando ✅ (solo usuarios, sin emails)");
 });
 
 const PORT = process.env.PORT || 10000;
