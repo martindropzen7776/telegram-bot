@@ -10,8 +10,13 @@ const path = require("path");
 const TOKEN = process.env.BOT_TOKEN;
 if (!TOKEN) throw new Error("Falta la variable BOT_TOKEN");
 
-// 👑 Tu ID de Telegram (para /broadcast y /stats)
-const ADMIN_ID = 7759212225;
+// 👑 IDs de Telegram que pueden usar /broadcast y /stats
+// Poné acá TODOS los admins:
+const ADMINS = [
+  7759212225, // yo
+  7656259776, // gerard 
+  7928936124, // tuli
+];
 
 /* ============================
    📁 DISK /data EN RENDER
@@ -98,10 +103,10 @@ Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no
   );
 });
 
-/* ----- /broadcast <mensaje> (solo admin) ----- */
+/* ----- /broadcast <mensaje> (solo admins) ----- */
 
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
-  if (msg.from.id !== ADMIN_ID) {
+  if (!ADMINS.includes(msg.from.id)) {
     return bot.sendMessage(
       msg.chat.id,
       "❌ No tenés permiso para usar este comando."
@@ -126,10 +131,10 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
   bot.sendMessage(msg.chat.id, "✅ Broadcast enviado a todos los usuarios.");
 });
 
-/* ----- /stats → ver cantidad de usuarios (solo admin) ----- */
+/* ----- /stats → ver cantidad de usuarios (solo admins) ----- */
 
 bot.onText(/\/stats/, (msg) => {
-  if (msg.from.id !== ADMIN_ID) {
+  if (!ADMINS.includes(msg.from.id)) {
     return bot.sendMessage(
       msg.chat.id,
       "❌ No tenés permiso para usar este comando."
