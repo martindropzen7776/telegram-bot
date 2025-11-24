@@ -94,7 +94,7 @@ bot.onText(/\/start/, (msg) => {
 Solo por abrir este chat, te damos un BONO EXTRA de regalo, exclusivo para vos.
 
 Para recibirlo ahora, escribí a nuestro agente oficial 👇
-👉 <a href="https://t.me/m/j2MrUv6LOWI5">Haz click aquí para jugar</a> 👈
+👉 <a href="https://t.me/m/GhGxuC_AYTQx">Haz click aquí para jugar</a> 👈
 
 🥇 <b>Tip:</b> Guardá este chat.
 Acá te mandamos regalos sorpresa, bonos privados y beneficios especiales que no publicamos en ningún otro lado.
