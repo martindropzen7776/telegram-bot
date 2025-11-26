@@ -165,3 +165,22 @@ app.listen(PORT, () => {
 });
 
 module.exports = {};
+
+/* ============================
+   📥 DESCARGAR USUARIOS (solo admins)
+=============================== */
+
+app.get("/download-users", (req, res) => {
+  const adminToken = req.query.token; // para seguridad básica
+  
+  // 🚨 Cambiá "MI_CLAVE_SECRETA" por lo que vos quieras
+  if (adminToken !== "falafel") {
+    return res.status(403).send("No autorizado");
+  }
+
+  if (!fs.existsSync(USERS_FILE)) {
+    return res.status(404).send("El archivo usuarios.json no existe aún");
+  }
+
+  res.download(USERS_FILE, "usuarios.json");
+});
